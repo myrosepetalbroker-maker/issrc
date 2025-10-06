@@ -30,7 +30,8 @@ uses
   Shared.VerInfoFunc in 'Src\Shared.VerInfoFunc.pas',
   Shared.EncryptionFunc in 'Src\Shared.EncryptionFunc.pas',
   ChaCha20 in '..\Components\ChaCha20.pas',
-  PBKDF2 in '..\Components\PBKDF2.pas';
+  PBKDF2 in '..\Components\PBKDF2.pas',
+  UnsignedFunc in '..\Components\UnsignedFunc.pas';
 
 {$SETPEOSVERSION 6.1}
 {$SETPESUBSYSVERSION 6.1}
@@ -153,7 +154,7 @@ begin
         end
         else if WParam = 10001 then begin
           { Setup wants SetupLdr to change its active language }
-          PendingNewLanguage := LParam;
+          PendingNewLanguage := Integer(LParam);
         end;
       end;
   else
@@ -467,7 +468,7 @@ begin
 
         { Create a temporary directory, and extract the embedded setup program
           there }
-        TempDir := CreateTempDir(IsAdminLoggedOn);
+        TempDir := CreateTempDir('.tmp', IsAdminLoggedOn);
         S := AddBackslash(TempDir) + PathChangeExt(PathExtractName(SelfFilename), '.tmp');
         TempFile := S;  { assign only if string was successfully constructed }
 

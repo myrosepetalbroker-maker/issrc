@@ -44,7 +44,6 @@ uses
   Setup.ScriptClasses in 'Src\Setup.ScriptClasses.pas',
   Setup.SelectLanguageForm in 'Src\Setup.SelectLanguageForm.pas' {SelectLanguageForm},
   Setup.FileExtractor in 'Src\Setup.FileExtractor.pas',
-  Shared.Int64Em in 'Src\Shared.Int64Em.pas',
   Setup.SelectFolderForm in 'Src\Setup.SelectFolderForm.pas' {SelectFolderForm},
   Compression.Base in 'Src\Compression.Base.pas',
   Compression.Zlib in 'Src\Compression.Zlib.pas',
@@ -106,6 +105,7 @@ uses
   Compression.SevenZipDLLDecoder in 'Src\Compression.SevenZipDLLDecoder.pas',
   Compression.SevenZipDLLDecoder.Interfaces in 'Src\Compression.SevenZipDLLDecoder.Interfaces.pas',
   Shared.EncryptionFunc in 'Src\Shared.EncryptionFunc.pas',
+  UnsignedFunc in '..\Components\UnsignedFunc.pas',
   Vcl.Themes,
   Vcl.Styles,
   Setup.TaskDialogForm in 'Src\Setup.TaskDialogForm.pas' {TaskDialogForm};

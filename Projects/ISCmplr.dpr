@@ -2,7 +2,7 @@ library ISCmplr;
 
 {
   Inno Setup
-  Copyright (C) 1997-2024 Jordan Russell
+  Copyright (C) 1997-2025 Jordan Russell
   Portions by Martijn Laan
   For conditions of distribution and use, see LICENSE.TXT.
 
@@ -37,7 +37,6 @@ uses
   PathFunc in '..\Components\PathFunc.pas',
   TrustFunc in '..\Components\TrustFunc.pas',
   Shared.CommonFunc in 'Src\Shared.CommonFunc.pas',
-  Shared.Int64Em in 'Src\Shared.Int64Em.pas',
   SHA256 in '..\Components\SHA256.pas',
   Shared.DebugStruct in 'Src\Shared.DebugStruct.pas',
   Shared.LangOptionsSectionDirectives in 'Src\Shared.LangOptionsSectionDirectives.pas',
@@ -52,7 +51,8 @@ uses
   ECDSA in '..\Components\ECDSA.pas',
   ISSigFunc in '..\Components\ISSigFunc.pas',
   StringScanner in '..\Components\StringScanner.pas',
-  Shared.EncryptionFunc in 'Src\Shared.EncryptionFunc.pas';
+  Shared.EncryptionFunc in 'Src\Shared.EncryptionFunc.pas',
+  UnsignedFunc in '..\Components\UnsignedFunc.pas';
 
 {$IMAGEBASE $00800000}
 {$SETPEOSVERSION 6.1}

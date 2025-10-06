@@ -77,7 +77,6 @@ type
   end;
 
 procedure CalculateBaseUnitsFromFont(const Font: TFont; var X, Y: Integer);
-function GetRectOfPrimaryMonitor(const WorkArea: Boolean): TRect;
 function SetFontNameSize(const AFont: TFont; const AName: String;
   const ASize: Integer; const AFallbackName: String;
   const AFallbackSize: Integer): Boolean;
@@ -101,39 +100,6 @@ begin
   if not WorkArea or
      not SystemParametersInfo(SPI_GETWORKAREA, 0, @Result, 0) then
     Result := Rect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
-end;
-
-function GetRectOfMonitorContainingRect(const R: TRect): TRect;
-{ Returns bounding rectangle of monitor containing or nearest to R }
-type
-  HMONITOR = type THandle;
-  TMonitorInfo = record
-    cbSize: DWORD;
-    rcMonitor: TRect;
-    rcWork: TRect;
-    dwFlags: DWORD;
-  end;
-const
-  MONITOR_DEFAULTTONEAREST = $00000002;
-var
-  Module: HMODULE;
-  MonitorFromRect: function(const lprc: TRect; dwFlags: DWORD): HMONITOR; stdcall;
-  GetMonitorInfo: function(hMonitor: HMONITOR; var lpmi: TMonitorInfo): BOOL; stdcall;
-  M: HMONITOR;
-  Info: TMonitorInfo;
-begin
-  Module := GetModuleHandle(user32);
-  MonitorFromRect := GetProcAddress(Module, 'MonitorFromRect');
-  GetMonitorInfo := GetProcAddress(Module, 'GetMonitorInfoA');
-  if Assigned(MonitorFromRect) and Assigned(GetMonitorInfo) then begin
-    M := MonitorFromRect(R, MONITOR_DEFAULTTONEAREST);
-    Info.cbSize := SizeOf(Info);
-    if GetMonitorInfo(M, Info) then begin
-      Result := Info.rcWork;
-      Exit;
-    end;
-  end;
-  Result := GetRectOfPrimaryMonitor(True);
 end;
 
 function SetFontNameSize(const AFont: TFont; const AName: String;
@@ -188,60 +154,21 @@ begin
   end;
 end;
 
-procedure NewChangeScale(const Ctl: TControl; const XM, XD, YM, YD: Integer);
-var
-  X, Y, W, H: Integer;
-begin
-  X := MulDiv(Ctl.Left, XM, XD);
-  Y := MulDiv(Ctl.Top, YM, YD);
-  if not(csFixedWidth in Ctl.ControlStyle) then
-    W := MulDiv(Ctl.Width, XM, XD)
-  else
-    W := Ctl.Width;
-  if not(csFixedHeight in Ctl.ControlStyle) then
-    H := MulDiv(Ctl.Height, YM, YD)
-  else
-    H := Ctl.Height;
-  Ctl.SetBounds(X, Y, W, H);
-end;
-
-procedure NewScaleControls(const Ctl: TWinControl; const XM, XD, YM, YD: Integer);
-{ This is like TControl.ScaleControls, except it allows the width and height
-  to be scaled independently }
-var
-  I: Integer;
-  C: TControl;
-begin
-  for I := 0 to Ctl.ControlCount-1 do begin
-    C := Ctl.Controls[I];
-    if C is TWinControl then begin
-      TWinControl(C).DisableAlign;
-      try
-        NewScaleControls(TWinControl(C), XM, XD, YM, YD);
-        NewChangeScale(C, XM, XD, YM, YD);
-      finally
-        TWinControl(C).EnableAlign;
-      end;
-    end
-    else
-      NewChangeScale(C, XM, XD, YM, YD);
-  end;
-end;
-
-function GetParentSetupForm(AControl: TControl): TSetupForm;
-begin
-  { Note: Unlike GetParentForm, this checks all levels, not just the top }
-  repeat
-    if AControl is TSetupForm then begin
-      Result := TSetupForm(AControl);
-      Exit;
-    end;
-    AControl := AControl.Parent;
-  until AControl = nil;
-  Result := nil;
-end;
-
 function IsParentSetupFormFlipped(AControl: TControl): Boolean;
+
+  function GetParentSetupForm(AControl: TControl): TSetupForm;
+  begin
+    { Note: Unlike GetParentForm, this checks all levels, not just the top }
+    repeat
+      if AControl is TSetupForm then begin
+        Result := TSetupForm(AControl);
+        Exit;
+      end;
+      AControl := AControl.Parent;
+    until AControl = nil;
+    Result := nil;
+  end;
+
 var
   ParentForm: TSetupForm;
 begin
@@ -252,34 +179,15 @@ begin
     Result := False;
 end;
 
-type
-  TControlAnchorsList = TDictionary<TControl, TAnchors>;
-  TControlAccess = class(TControl);
-
-procedure StripAndStoreCustomAnchors(const Ctl: TControl; const AnchorsList: TControlAnchorsList);
-var
-  I: Integer;
+function GetPPI(const Wnd: HWND): Integer;
 begin
-  if Ctl.Anchors <> [akLeft, akTop] then begin
-    AnchorsList.Add(Ctl, Ctl.Anchors);
-    { Before we can set Anchors to [akLeft, akTop] (which has a special
-      'no anchors' meaning to VCL), we first need to update the Explicit*
-      properties so the control doesn't get moved back to an old position. }
-    TControlAccess(Ctl).UpdateExplicitBounds;
-    Ctl.Anchors := [akLeft, akTop];
-  end;
-
-  if Ctl is TWinControl then
-    for I := 0 to TWinControl(Ctl).ControlCount-1 do
-      StripAndStoreCustomAnchors(TWinControl(Ctl).Controls[I], AnchorsList);
-end;
-
-procedure RestoreAnchors(const Ctl: TControl; const AnchorsList: TControlAnchorsList);
-begin
-  { The order in which we restore the anchors shouldn't matter, so just
-    enumerate the list. }
-  for var Item in AnchorsList do
-    Item.Key.Anchors := Item.Value;
+  { Based on TSysStyleHook.GetCurrentPPI }
+  if CheckPerMonitorV2SupportForWindow(Wnd) then begin { Currently always False in Setup }
+    { GetDPIForWindow requires Windows 10 version 1607. However, because it is delay-loaded and it's
+      never executed on older versions of Windows, it does not cause entry point not found errors. }
+    Result := GetDPIForWindow(Wnd)
+  end else
+    Result := Screen.PixelsPerInch;
 end;
 
 { TSetupForm }
@@ -360,6 +268,40 @@ begin
 end;
 
 procedure TSetupForm.CenterInsideRect(const InsideRect: TRect);
+
+  function GetRectOfMonitorContainingRect(const R: TRect): TRect;
+  { Returns bounding rectangle of monitor containing or nearest to R }
+  type
+    HMONITOR = type THandle;
+    TMonitorInfo = record
+      cbSize: DWORD;
+      rcMonitor: TRect;
+      rcWork: TRect;
+      dwFlags: DWORD;
+    end;
+  const
+    MONITOR_DEFAULTTONEAREST = $00000002;
+  var
+    Module: HMODULE;
+    MonitorFromRect: function(const lprc: TRect; dwFlags: DWORD): HMONITOR; stdcall;
+    GetMonitorInfo: function(hMonitor: HMONITOR; var lpmi: TMonitorInfo): BOOL; stdcall;
+    M: HMONITOR;
+    Info: TMonitorInfo;
+  begin
+    Module := GetModuleHandle(user32);
+    MonitorFromRect := GetProcAddress(Module, 'MonitorFromRect');
+    GetMonitorInfo := GetProcAddress(Module, 'GetMonitorInfoA');
+    if Assigned(MonitorFromRect) and Assigned(GetMonitorInfo) then begin
+      M := MonitorFromRect(R, MONITOR_DEFAULTTONEAREST);
+      Info.cbSize := SizeOf(Info);
+      if GetMonitorInfo(M, Info) then begin
+        Result := Info.rcWork;
+        Exit;
+      end;
+    end;
+    Result := GetRectOfPrimaryMonitor(True);
+  end;
+
 var
   R, MR: TRect;
 begin
@@ -411,6 +353,19 @@ begin
 end;
 
 procedure TSetupForm.CreateWnd;
+
+  procedure SetControlsCurrentPPI(const Ctl: TWinControl; const PPI: Integer);
+  begin
+    for var I := 0 to Ctl.ControlCount-1 do begin
+      const C = Ctl.Controls[I];
+      if C is TWinControl then begin
+        SetControlsCurrentPPI(TWinControl(C), PPI);
+        C.SetCurrentPPI(PPI);
+      end else
+        C.SetCurrentPPI(PPI)
+    end;
+  end;
+
 begin
   inherited;
   if WM_QueryCancelAutoPlay <> 0 then
@@ -421,7 +376,30 @@ begin
       some reason. Doing it here does not cause this problem. It's also here because SetDarkTitleBar
       requires the handle of the form. }
     SetDarkTitleBar(Self, IsDarkInstallMode);
+    { SetDarkTitleBar is a noop on older versions of Windows }
+    if seBorder in StyleElements then
+      StyleElements := StyleElements - [seBorder];
   end;
+
+  { We don't use the Scaled property for scaling and this means the CurrentPPI property will not be
+    set correctly. This causes problems when VCL code inspects it, for example in THintWindow.CalcHintRect
+    and FormStyleHook.GetBorderSize. So we should update it ourselves by directly writing to the
+    FCurrentPPI private variable of the form and all controls on it, which we can do using a class
+    helper. Note: Doing it later for the form causes issues with incorrect non-client vs. client size
+    when styled title bars are enabled. }
+
+  const PPI = GetPPI(Handle);
+  SetCurrentPPI(PPI);
+  SetControlsCurrentPPI(Self, PPI);
+  
+  { Now that CurrentPPI of the form is set you must make sure that any controls you later parent to
+    the form already have the same CurrentPPI, otherwise VCL will scale the controls. Currently this
+    is done in:
+    -Setup.ScriptClasses's TControlParentW and TNewNotebookPageNotebook_W
+    -Setup.ScriptDlg's SetCtlParent
+    -TWizardForm.AddPage
+    To debug/detect scaling add a breakpoint in Vcl.Controls' TWinControl.ChangeScale and set project
+    option Building->Delphi Compiler->Compiling->Debugging->Use debug .dcus. }
 end;
 
 procedure TSetupForm.FlipControlsIfNeeded;
@@ -469,7 +447,80 @@ begin
   SizeAndCenterIfNeeded(ACenterInsideControl, CenterInsideControlCtl, CenterInsideControlInsideClientArea);
 end;
 
+type
+  TControlAccess = class(TControl);
+
 procedure TSetupForm.InitializeFont;
+
+  procedure NewChangeScale(const Ctl: TControl; const XM, XD, YM, YD: Integer);
+  var
+    X, Y, W, H: Integer;
+  begin
+    X := MulDiv(Ctl.Left, XM, XD);
+    Y := MulDiv(Ctl.Top, YM, YD);
+    if not(csFixedWidth in Ctl.ControlStyle) then
+      W := MulDiv(Ctl.Width, XM, XD)
+    else
+      W := Ctl.Width;
+    if not(csFixedHeight in Ctl.ControlStyle) then
+      H := MulDiv(Ctl.Height, YM, YD)
+    else
+      H := Ctl.Height;
+    Ctl.SetBounds(X, Y, W, H);
+  end;
+
+  procedure NewScaleControls(const Ctl: TWinControl; const XM, XD, YM, YD: Integer);
+  { This is like TControl.ScaleControls, except it allows the width and height
+    to be scaled independently }
+  var
+    I: Integer;
+    C: TControl;
+  begin
+    for I := 0 to Ctl.ControlCount-1 do begin
+      C := Ctl.Controls[I];
+      if C is TWinControl then begin
+        TWinControl(C).DisableAlign;
+        try
+          NewScaleControls(TWinControl(C), XM, XD, YM, YD);
+          NewChangeScale(C, XM, XD, YM, YD);
+        finally
+          TWinControl(C).EnableAlign;
+        end;
+      end
+      else
+        NewChangeScale(C, XM, XD, YM, YD);
+    end;
+  end;
+
+  type
+    TControlAnchorsList = TDictionary<TControl, TAnchors>;
+
+  procedure StripAndStoreCustomAnchors(const Ctl: TControl; const AnchorsList: TControlAnchorsList);
+  var
+    I: Integer;
+  begin
+    if Ctl.Anchors <> [akLeft, akTop] then begin
+      AnchorsList.Add(Ctl, Ctl.Anchors);
+      { Before we can set Anchors to [akLeft, akTop] (which has a special
+        'no anchors' meaning to VCL), we first need to update the Explicit*
+        properties so the control doesn't get moved back to an old position. }
+      TControlAccess(Ctl).UpdateExplicitBounds;
+      Ctl.Anchors := [akLeft, akTop];
+    end;
+
+    if Ctl is TWinControl then
+      for I := 0 to TWinControl(Ctl).ControlCount-1 do
+        StripAndStoreCustomAnchors(TWinControl(Ctl).Controls[I], AnchorsList);
+  end;
+
+  procedure RestoreAnchors(const Ctl: TControl; const AnchorsList: TControlAnchorsList);
+  begin
+    { The order in which we restore the anchors shouldn't matter, so just
+      enumerate the list. }
+    for var Item in AnchorsList do
+      Item.Key.Anchors := Item.Value;
+  end;
+
 var
   ControlAnchorsList: TControlAnchorsList;
   W, H: Integer;
@@ -528,7 +579,7 @@ begin
     propagated out, which is what we want }
   if not Visible then
     FlipSizeAndCenterIfNeeded;
-end;
+  end;
 
 procedure TSetupForm.CMShowingChanged(var Message: TMessage);
 begin

@@ -21,7 +21,7 @@ uses
   Windows, SysUtils, Classes, Generics.Collections,
   SimpleExpression, SHA256, ChaCha20, Shared.SetupTypes,
   Shared.Struct, Shared.CompilerInt.Struct, Shared.PreprocInt, Shared.SetupMessageIDs,
-  Shared.SetupSectionDirectives, Shared.VerInfoFunc, Shared.Int64Em, Shared.DebugStruct,
+  Shared.SetupSectionDirectives, Shared.VerInfoFunc, Shared.DebugStruct,
   Compiler.ScriptCompiler, Compiler.StringLists, Compression.LZMACompressor,
   Compiler.ExeUpdateFunc;
 
@@ -1941,6 +1941,62 @@ begin
   end;
 end;
 
+function StrToInteger64(const S: String; var X: Int64): Boolean;
+{ Converts a string containing an unsigned decimal number, or hexadecimal
+  number prefixed with '$', into an Integer64. Returns True if successful,
+  or False if invalid characters were encountered or an overflow occurred.
+  Supports digits separators. }
+var
+  Len, Base, StartIndex, I: Integer;
+  V: Int64;
+  C: Char;
+begin
+  Result := False;
+
+  Len := Length(S);
+  Base := 10;
+  StartIndex := 1;
+  if Len > 0 then begin
+    if S[1] = '$' then begin
+      Base := 16;
+      Inc(StartIndex);
+    end else if S[1] = '_' then
+      Exit;
+  end;
+
+  if (StartIndex > Len) or (S[StartIndex] = '_') then
+    Exit;
+  V := 0;
+
+  try
+    for I := StartIndex to Len do begin
+      C := UpCase(S[I]);
+      case C of
+        '0'..'9':
+          begin
+            V := V * Base;
+            Inc(V, Ord(C) - Ord('0'));
+          end;
+        'A'..'F':
+          begin
+            if Base <> 16 then
+              Exit;
+            V := V * Base;
+            Inc(V, Ord(C) - (Ord('A') - 10));
+          end;
+        '_':
+          { Ignore }
+      else
+        Exit;
+      end;
+    end;
+    X := V;
+    Result := True;
+  except on E: EOverflow do
+    ;
+  end;
+end;
+
 function TSetupCompiler.EvalArchitectureIdentifier(Sender: TSimpleExpression;
   const Name: String; const Parameters: array of const): Boolean;
 const
@@ -3499,7 +3555,10 @@ procedure TSetupCompiler.EnumLangOptionsProc(const Line: PChar; const Ext: Integ
       lsLanguageID: begin
           if AffectsMultipleLangs then
             AbortCompileFmt(SCompilerCantSpecifyLangOption, [KeyName]);
-          LangOptions.LanguageID := StrToIntCheck(Value);
+          const LanguageID = StrToIntCheck(Value);
+          if (LanguageID < Low(LangOptions.LanguageID)) or (LanguageID > High(LangOptions.LanguageID)) then
+            Invalid;
+          LangOptions.LanguageID := Word(LanguageID);
         end;
       lsLanguageName: begin
           if AffectsMultipleLangs then
@@ -4863,7 +4922,7 @@ type
   PFileListRec = ^TFileListRec;
   TFileListRec = record
     Name: String;
-    Size: Integer64;
+    Size: Int64;
   end;
   PDirListRec = ^TDirListRec;
   TDirListRec = record
@@ -4920,15 +4979,14 @@ type
   end;
 
   procedure AddToFileList(const FileList: TList; const Filename: String;
-    const SizeLo, SizeHi: LongWord);
+    const Size: Int64);
   var
     Rec: PFileListRec;
   begin
     FileList.Expand;
     New(Rec);
     Rec.Name := Filename;
-    Rec.Size.Lo := SizeLo;
-    Rec.Size.Hi := SizeHi;
+    Rec.Size := Size;
     FileList.Add(Rec);
   end;
 
@@ -4974,8 +5032,7 @@ type
           if IsExcluded(SearchSubDir + FileName, AExcludes) then
             Continue;
 
-          AddToFileList(FileList, SearchSubDir + FileName, FindData.nFileSizeLow,
-            FindData.nFileSizeHigh);
+          AddToFileList(FileList, SearchSubDir + FileName, FindDataFileSizeToInt64(FindData));
 
           CallIdleProc;
         until not SourceIsWildcard or not FindNextFile(H, FindData);
@@ -5678,7 +5735,7 @@ begin
           if FileList.Count > 1 then
             SortFileList(FileList, 0, FileList.Count-1, SortFilesByExtension, SortFilesByName);
         end else
-          AddToFileList(FileList, SourceWildcard, 0, 0);
+          AddToFileList(FileList, SourceWildcard, 0);
 
         if FileList.Count > 0 then begin
           if not ExternalFile then
@@ -7389,8 +7446,11 @@ var
             FileTimeToLocalFileTime(FT, FL.SourceTimeStamp);
           if floApplyTouchDateTime in FLExtraInfo.Flags then
             ApplyTouchDateTime(FL.SourceTimeStamp);
-          if TimeStampRounding > 0 then
-            Dec64(Integer64(FL.SourceTimeStamp), Mod64(Integer64(FL.SourceTimeStamp), TimeStampRounding * 10000000));
+          if TimeStampRounding > 0 then begin
+            var SourceTimeStamp := Int64(FL.SourceTimeStamp);
+            Dec(SourceTimeStamp, SourceTimeStamp mod (TimeStampRounding * 10000000));
+            FL.SourceTimeStamp := TFileTime(SourceTimeStamp);
+          end;
 
           if ChunkCompressed and IsX86OrX64Executable(SourceFile) then
             Include(FL.Flags, floCallInstructionOptimized);

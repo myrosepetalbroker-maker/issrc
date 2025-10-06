@@ -51,7 +51,7 @@ if not "%1"=="" goto failed
 
 echo - ISPP.dll
 mkdir %DCUDIR_WIN32%\ISPP.dpr 2>nul
-"%DELPHIXEROOT%\bin\dcc32.exe" %FLAGSCONSOLE% -W-IMPLICIT_INTEGER_CAST_LOSS -W-IMPLICIT_CONVERSION_LOSS -NS%NAMESPACES%  -U"%DELPHIXELIB_WIN32%"  -NU%DCUDIR_WIN32%\ISPP.dpr ISPP.dpr
+"%DELPHIXEROOT%\bin\dcc32.exe" %FLAGSCONSOLE% -$T+ -NS%NAMESPACES%  -U"%DELPHIXELIB_WIN32%"  -NU%DCUDIR_WIN32%\ISPP.dpr ISPP.dpr
 if errorlevel 1 goto failed
 
 echo - Compil32.exe
@@ -61,7 +61,7 @@ if errorlevel 1 goto failed
 
 echo - ISCC.exe
 mkdir %DCUDIR_WIN32%\ISCC.dpr 2>nul
-"%DELPHIXEROOT%\bin\dcc32.exe" %FLAGS% -W-IMPLICIT_INTEGER_CAST_LOSS -W-IMPLICIT_CONVERSION_LOSS -NS%NAMESPACES% -U"%DELPHIXELIB_WIN32%;%ROPSSRC%" -NU%DCUDIR_WIN32%\ISCC.dpr -D%ROPSDEF% ISCC.dpr
+"%DELPHIXEROOT%\bin\dcc32.exe" %FLAGS% -$T+ -NS%NAMESPACES% -U"%DELPHIXELIB_WIN32%;%ROPSSRC%" -NU%DCUDIR_WIN32%\ISCC.dpr -D%ROPSDEF% ISCC.dpr
 if errorlevel 1 goto failed
 
 echo - ISCmplr.dll
@@ -71,7 +71,7 @@ if errorlevel 1 goto failed
 
 echo - SetupLdr.e32
 mkdir %DCUDIR_WIN32%\SetupLdr.dpr 2>nul
-"%DELPHIXEROOT%\bin\dcc32.exe" %FLAGSE32% -W-IMPLICIT_INTEGER_CAST_LOSS -W-IMPLICIT_CONVERSION_LOSS -NS%NAMESPACES% -U"%DELPHIXELIB_WIN32%" -NU%DCUDIR_WIN32%\SetupLdr.dpr -DSETUPLDRPROJ SetupLdr.dpr
+"%DELPHIXEROOT%\bin\dcc32.exe" %FLAGSE32% -$T+ -NS%NAMESPACES% -U"%DELPHIXELIB_WIN32%" -NU%DCUDIR_WIN32%\SetupLdr.dpr -DSETUPLDRPROJ SetupLdr.dpr
 if errorlevel 1 goto failed
 
 echo - Setup.e32
