@@ -20,7 +20,7 @@ implementation
 
 uses
   Windows,
-  Forms, SysUtils, Classes, Graphics, ActiveX, Generics.Collections,
+  Forms, SysUtils, Classes, Graphics, ActiveX, Generics.Collections, Math,
   uPSUtils, PathFunc, ISSigFunc, ECDSA, BrowseFunc, MD5, SHA1, SHA256, BitmapButton, BitmapImage, PSStackHelper,
   Shared.Struct, Setup.ScriptDlg, Setup.MainFunc, Shared.CommonFunc.Vcl,
   Shared.CommonFunc, Shared.FileClass, SetupLdrAndSetup.RedirFunc, SetupLdrAndSetup.InstFunc,
@@ -1920,6 +1920,31 @@ var
         FreeAndNil(F);
 
       Stack.SetClass(PStart, F);
+    end);
+    RegisterScriptFunc('Round', procedure(const Caller: TPSExec; const OrgName: AnsiString; const Stack: TPSStack; const PStart: Cardinal)
+    begin
+      const SaveRoundMode = GetRoundMode;
+      try
+        SetRoundMode(rmNearest);
+        Stack.SetInt64(PStart, Round(Stack.GetReal(PStart-1)));
+      finally
+        SetRoundMode(SaveRoundMode);
+      end;
+    end);
+    RegisterScriptFunc('Trunc', procedure(const Caller: TPSExec; const OrgName: AnsiString; const Stack: TPSStack; const PStart: Cardinal)
+    begin
+      Stack.SetInt64(PStart, Trunc(Stack.GetReal(PStart-1)));
+    end);
+    RegisterScriptFunc('MulDiv', procedure(const Caller: TPSExec; const OrgName: AnsiString; const Stack: TPSStack; const PStart: Cardinal)
+    begin
+      Stack.SetInt(PStart, MulDiv(Stack.GetInt(PStart-1), Stack.GetInt(PStart-2), Stack.GetInt(PStart-3)));
+    end);
+    RegisterScriptFunc('StrToColor', procedure(const Caller: TPSExec; const OrgName: AnsiString; const Stack: TPSStack; const PStart: Cardinal)
+    begin
+      var Hex := Stack.GetString(PStart-1);
+      if (Length(Hex) = 7) and (Hex[1] = '#') then
+        Hex := '$' + Copy(Hex, 6, 2)  + Copy(Hex, 4, 2) + Copy(Hex, 2, 2);
+      Stack.SetInt(PStart, SysUtils.StrToInt(Hex));
     end);
   end;
 

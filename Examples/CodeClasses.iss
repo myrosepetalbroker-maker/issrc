@@ -179,7 +179,7 @@ begin
   Memo := TNewMemo.Create(Page);
   Memo.Top := Edit.Top + Edit.Height + ScaleY(8);
   Memo.Width := Page.SurfaceWidth;
-  Memo.Height := ScaleY(79);
+  Memo.Height := ScaleY(70);
   Memo.Anchors := [akLeft, akTop, akRight, akBottom];
   Memo.ScrollBars := ssVertical;
   Memo.Text := 'TNewMemo';
@@ -206,9 +206,10 @@ begin
   
   CommandLinkButton := TNewButton.Create(Page);
   CommandLinkButton.Style := bsCommandLink;
-  CommandLinkButton.Caption := 'TNewButton bsCommandLink style';
+  CommandLinkButton.Caption := 'TNewButton bsCommandLink';
   CommandLinkButton.CommandLinkHint := 'A note';
   //CommandLinkButton.ElevationRequired := True;
+  CommandLinkButton.Font.Size := MulDiv(CommandLinkButton.Font.Size, 12, 8);
   CommandLinkButton.Top := FormButton.Top;
   CommandLinkButton.Left := TaskDialogButton.Left + TaskDialogButton.Width + ScaleX(8);
   CommandLinkButton.Width := Page.Surface.Width - CommandLinkButton.Left;
@@ -262,9 +263,9 @@ begin
   StaticText3.Parent := Page.Surface;
   StaticText3.StyleElements := StaticText3.StyleElements - [seFont];
   if IsDarkInstallMode then
-    StaticText3.Font.Color := $6C5ED9
+    StaticText3.Font.Color := StrToColor('#D95E6C')
   else
-    StaticText3.Font.Color := $5241d2;
+    StaticText3.Font.Color := StrToColor('#D24152');
 
   LinkLabel := TNewLinkLabel.Create(Page);
   LinkLabel.AutoSize := False;

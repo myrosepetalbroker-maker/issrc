@@ -692,8 +692,9 @@ end;
 
 procedure TWizardForm.UpdateWizardStyleImages;
 
-  procedure UpdateWizardStyleImage(const WizardStylePngImage: TPngImage; const ImageName: String);
+  procedure UpdateWizardStyleImage(const WizardStylePngImage: TPngImage; ImageName: String);
   begin
+    ImageName := ImageName.Replace('dark windows11', 'dark');
     const ImageIndex = WizardStyleImageCollection.GetIndexByName(ImageName);
     if ImageIndex = -1 then
       raise Exception.CreateFmt('Image name ''%s'' not found', [ImageName]);
@@ -885,6 +886,7 @@ begin
     PreviewForm.AutoSize := True;
     PreviewForm.BorderStyle := bsNone;
     PreviewForm.BorderIcons := [];
+    PreviewForm.Color := clWindow;
     PreviewForm.KeyPreview := True;
     PreviewForm.OnKeyDown := WizardStyleImagePreviewKeyDown;
 
