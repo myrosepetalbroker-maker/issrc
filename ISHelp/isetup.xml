@@ -2389,12 +2389,8 @@ DialogFontName=
 DialogFontSize=9
 DialogFontBaseScaleWidth=7
 DialogFontBaseScaleHeight=15
-WelcomeFontName=Verdana
-WelcomeFontSize=12
-TitleFontName=Arial
-TitleFontSize=29
-CopyrightFontName=Arial
-CopyrightFontSize=8
+WelcomeFontName=Segoe UI
+WelcomeFontSize=14
 RightToLeft=no
 </precode>
 
@@ -2429,9 +2425,12 @@ DialogFontBaseScaleWidth=6
 
 <p><b><a name="WelcomeFontName">WelcomeFontName</a></b> and <b><a name="WelcomeFontSize">WelcomeFontSize</a></b> specify the font name and point size to use at the top of the <i>Welcome</i> and <i>Setup Completed</i> wizard pages. If the specified font name does not exist on the user's system or is an empty string, 12-point <i>Microsoft Sans Serif</i> or <i>MS Sans Serif</i> will be substituted.</p>
 
-<p><b><a name="TitleFontName">TitleFontName</a></b> and <b><a name="TitleFontSize">TitleFontSize</a></b> specify the font name and point size to use when displaying the application name on the background window (only visible when <tt>WindowVisible=yes</tt>). If the specified font name does not exist on the user's system, 29-point <i>Arial</i> will be substituted. If the specified font name is an empty string, 29-point <i>Microsoft Sans Serif</i> or <i>MS Sans Serif</i> will be substituted.</p>
+<p>Before Inno Setup 6.6, the default font was 12-point <i>Verdana</i> instead of 14-point <i>Segoe UI</i>. To use this font again, use:</p>
 
-<p><b><a name="CopyrightFontName">CopyrightFontName</a></b> and <b><a name="CopyrightFontSize">CopyrightFontSize</a></b> specify the font name and point size to use when displaying the <tt>AppCopyright</tt> message on the background window (only visible when <tt>WindowVisible=yes</tt>). If the specified font name does not exist on the user's system, 8-point <i>Arial</i> will be substituted. If the specified font name is an empty string, 8-point <i>Microsoft Sans Serif</i> or <i>MS Sans Serif</i> will be substituted.</p>
+<precode>
+WelcomeFontName=Verdana
+WelcomeFontSize=12
+</precode>
 
 <p><b><a name="RightToLeft">RightToLeft</a></b> specifies whether the language is written from right to left. If set to <tt>yes</tt>, text alignment and reading order will be reversed (with some intentional exceptions), and controls will be arranged from right to left ("flipped").</p>
 
@@ -2441,6 +2440,13 @@ In cases where there are multiple [Languages] section entries, specifying a [Lan
 <precode>
 en.LanguageName=English
 </precode>
+
+<heading>Obsolete</heading>
+
+<p><i>Feature removed in 6.4.</i> <b><a name="TitleFontName">TitleFontName</a></b> and <b><a name="TitleFontSize">TitleFontSize</a></b> used to specifiy the font name and point size to use when displaying the application name on the background window (only visible when <tt>WindowVisible=yes</tt>). If the specified font name does not exist on the user's system, 29-point <i>Arial</i> will be substituted. If the specified font name is an empty string, 29-point <i>Microsoft Sans Serif</i> or <i>MS Sans Serif</i> will be substituted.</p>
+
+<p><i>Feature removed in 6.4.</i> <b><a name="CopyrightFontName">CopyrightFontName</a></b> and <b><a name="CopyrightFontSize">CopyrightFontSize</a></b> used to specify the font name and point size to use when displaying the <tt>AppCopyright</tt> message on the background window (only visible when <tt>WindowVisible=yes</tt>). If the specified font name does not exist on the user's system, 8-point <i>Arial</i> will be substituted. If the specified font name is an empty string, 8-point <i>Microsoft Sans Serif</i> or <i>MS Sans Serif</i> will be substituted.</p>
+
 
 </body>
 </topic>
@@ -6603,6 +6609,7 @@ CloseApplicationsFilterExcludes=MyProg.exe</pre></example>
 <tr><td>10.0.22621</td><td>Windows 11 Version 22H2 (2022 Update)</td></tr>
 <tr><td>10.0.22631</td><td>Windows 11 Version 23H2 (2023 Update)</td></tr>
 <tr><td>10.0.26100</td><td>Windows 11 Version 24H2 (2024 Update)</td></tr>
+<tr><td>10.0.26200</td><td>Windows 11 Version 25H2 (2025 Update)</td></tr>
 </table>
 <p>Note that except for Windows 11 there is normally no need to specify the build numbers (i.e., you may simply use "6.2" for Windows 8).</p>
 </body>
